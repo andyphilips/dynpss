@@ -1,0 +1,170 @@
+{smcl}
+{* *! version 1.0.1  07jul2016}{...}
+{findalias asfradohelp}{...}
+{vieweralsosee "" "--"}{...}
+{vieweralsosee "[R] help" "help help"}{...}
+{viewerjumpto "Syntax" "dynpss##syntax"}{...}
+{viewerjumpto "Description" "dynpss##description"}{...}
+{viewerjumpto "Options" "dynpss##options"}{...}
+{viewerjumpto "Author" "dynpss##author"}{...}
+{viewerjumpto "Reference" "dynpss##reference"}
+{viewerjumpto "Citations" "dynpss##citations"}
+{viewerjumpto "Examples" "dynpss##examples"}{...}
+
+{title:Title}
+
+{phang}
+{bf:dynpss} {hline 2} A program to dynamically simulate autoregressive distributed lag (ARDL) models.
+
+{marker syntax}{...}
+{title:Syntax}
+
+{p 8 17 2}
+{cmdab:dynpss} 
+{depvar}
+{indepvars}
+{ifin}
+[{cmd:,} {it:options}]
+
+{synoptset 20 tabbed}{...}
+{synopthdr}
+{synoptline}
+{syntab:Required options}
+
+{synopt:{opth lags(numlist)}}numeric list of the number of lags to include for each variable{p_end}
+{synopt:{opth shockvar(varname)}}a single independent variable from {indepvars} that is to be shocked {p_end}
+{synopt:{opth shockval(#)}}amount to shock {cmd:shockvar({varname})} by{p_end}
+
+{syntab:Additional options}
+
+{synopt:{opth diffs(numlist)}}numeric list of the number of contemporaneous first differences to include for each variable{p_end}
+{synopt:{opth lagdiffs(numlist)}}numeric list of the number of lagged first differences to include for each variable{p_end}
+{synopt:{opth level(numlist)}}numeric list of variables to appear in levels{p_end}
+{synopt:{opt ec}}if specified, {depvar} will be estimated in first differences (i.e. error-correction) form{p_end}
+{synopt:{opth range(#)}}length of scenario to simulate (default is 20){p_end}
+{synopt:{opth sig(#)}}significance level for confidence intervals  (default is 95%){p_end}
+{synopt:{opth t:ime(#)}}scenario time in which the shock occurs (default is 10){p_end}
+{synopt:{opth saving(string)}}specifies the name of the output file (default is "dynpss_results.dta"){p_end}
+{synopt:{opth forceset(numlist)}}forces the variables to be set to a user-specified value{p_end}
+{synopt:{opth sims(numlist)}}number of simulations (default is 1000){p_end}
+{synopt:{opth burnin(#)}}allows program to iterate out so starting values are stable (rarely used){p_end}
+{synopt:{opt graph}}plot dynamic results using a spikeplot. Can also specify {opt rarea} to create an area plot{p_end}
+{synoptline}
+{p2colreset}{...}
+{p 4 6 2}
+
+{marker description}{...}
+{title:Description}
+
+{pstd}
+{cmd:dynpss} is a program to produce dynamic simulations of autoregressive distributed lag models (ARDL) of the sort recommended by Pesaran, Shin, and Smith (2001). See Philips (2016b) for a discussion of this approach and examples of the dynamic simulation strategy in practice. 
+
+{pstd}
+Users can find and download the most up-to-date version of {cmd:dynpss} at:
+ {view "http://andyphilips.github.io/dynpss/"}.
+
+{pstd}
+In short, this modeling strategy involves: 1.) determining the order of integration of the dependent variable (which determines whether the resulting ARDL model is run in error-correction form or lagged-dependent form), 2.) ensuring no variable is higher than I(1) or contains a seasonal unit root 3.) using information criterion to identify the best-fitting {cmd:lagdiff( )} structure, which is used to purge the model of residual autocorrelation and ensure it is dynamically stable, 4.) for error-correction models, performing the bounds test of Pesaran, Shin, and Smith (2001) and evaluating whether all regressors are all stationary, mixed I(0), I(1)/I(1) and cointegrating, or all cointegrating. Narayan (2005) provides finite sample critical values for this test. 5.) making changes as needed based off the bounds test, and re-running step 4.
+
+{pstd}
+{cmd:dynpss} is designed to dynamically simulate the effects of a counterfactual change in one weakly exogenous regressor at a point in time, using stochastic simulation techniques. Since the ARDL procedure can produce models that are complicated to interpret, {cmd:dynpss} is designed to ease the burden of substantive interpretations through the creation of expected values of the dependent variable (along with associated confidence intervals), which can be plotted to show how a change in one variable "flows" through the model over time. {cmd:dynpss} takes 1000 (or however many simulations a user desires) draws of the set of parameters from a multivariate normal distribution, using the estimated parameters and the variance-covariance matrix from the linear regression. These are then used to create predicted Y-hat values over time by setting all covariates to certain values (typically means) and introducing stochastic uncertainty. 
+
+{marker options}{...}
+{title:Options}
+
+{dlgtab:Required Options}
+
+{phang}
+{opth lags(numlist)}
+is a numeric list of the number of lags to include for each variable. The number of desired lags is listed in the order in which the variables in {depvar} and {indepvar} appear. For instance, in a model with two weakly exogenous variables, we lag all variables by: {cmd:lags(1 1 1)}. Note that at least one lag for {depvar} must always be specified. To estimate a model without a lag for a particular variable, replace the number with a "."; for instance {cmd:lags(1 . .)}. If a higher number of lags are specified, {cmd:dynpss} will add consecutive lags; i.e. lags(3 . .) will introduce t-1, t-2, t-3 in the model.
+
+{phang}
+{opth shockvar(varname)}
+is the independent variable in {indepvars} that is to experience a counterfactual shock of size {cmd:shockval(#)} at time {cmd:time(#)}.
+
+{phang}
+{opth shockval(#)}
+is the amount to shock {cmd:shockvar(varname)} by. Most commonly, a +/- one standard deviation shock is specified.
+
+{dlgtab:Additional Options}
+
+{phang}
+{opth diffs(numlist)}
+is a list of the number of contemporaneous first differences to include for each variable. Note that the first entry will always be empty (denoted by a "."), since the first difference of {depvar} cannot appear on the right-hand side of the equation. {cmd:dynpss} will issue an error message if anything order higher than first differences are listed.
+
+{phang}
+{opth lagdiffs(numlist)}
+is a numeric list of the lagged first difference to include for each variable. For instance, to include a lag at t-2 for {depvar}, a lag at t-1 for the first weakly exogenous variable, and none for the second, specify {cmd:lagdiff(2 1 .)}. CURRENT VERSION DOES NOT ALLOW FOR CONSECUTIVE LAGGED DIFFERENCES.
+
+{phang}
+{opth levels(varlist)}
+is a list of variables (x1 x2...) to appear in levels. If both {opt levels( )} and {opt ec} are specified, {cmd:dynpss} will issue a warning message.{p_end}
+
+{phang}
+{opt ec}
+if specified, {depvar} will be estimated in first differences (i.e. error-correction) form.
+
+{phang}
+{opth range(#)}
+is the length of scenario to simulate. By default, {cmd:dynpss} estimates a range of t=20. {cmd:range( )} must always be larger than {cmd:time( )}.
+
+{phang}
+{opth sig(#)}
+specifies the significance level for the percentile confidence intervals of the predicted values of the dependent variable to save to the dataset. By default, these are 95%.
+
+{phang}
+{opth t:ime(#)}
+is the scenario time at which the shock occurs to the variable specified in {cmd: shockvar( )}. By default, this occurs at t=10.
+
+{phang}
+{opth saving(string)}
+specifies the name of the output file where expected values and confidence intervals are saved to. If no filename is specified, the program will save these results as  "dynpss_results.dta".
+
+{phang}
+{opth forceset(numlist)}
+by default, {cmd:dynpss} estimates the ARDL model in equilibrium; all lagged variables and variables in levels are set to their sample means. The first differences and any lagged first differences are set to zero. This option allows the user to change the setting of the lagged (or unlagged) levels of the variables. This could be particularly useful when estimating a dummy variable, for instance, when we wish to see the effect of a movement from 0 -> 1.
+
+{phang}
+{opth sims(numlist)}
+allows the user to set the number of simulations the program performs. By default, 1000 simulations are performed. However, if the confidence intervals are particularly noisy, it may help to increase this number. Note that you may also need to increase matsize.
+
+{phang}
+{opth burnin(#)}
+if using the option {cmd:forceset( )}, the predicted values will not be in equilibrium at the start of the simulation, and will take some amount of time to flatten out. To get around this, use the {cmd:burnin} option to specify a number of simulations to ``throw out'' at the start. By default, this is 20. Burnins do not change the simulation range or time; to simulate a range of 25 with a shock at time 10, and burnin of 30, use the options: {cmd:burnin(30)} {cmd:range(25)} {cmd:time(10)}.
+
+{phang}
+{opt graph}
+although {cmd:dynspp} saves the means of the predicted values and user-specified confidence intervals in {cmd:saving}, users can also automatically plot the dynamic results with a spikeplot by using {cmd: graph}. As an alternative, by adding the option {cmd:rarea}, the program will automatically create an area plot.
+
+{marker author}{...}
+{title:Author}
+
+{pstd}
+Andrew Q. Philips {break}
+Department of Political Science {break}
+Texas A&M University  {break}
+College Station, TX   {break}
+aphilips@pols.tamu.edu {p_end}
+
+{marker reference}{...}
+{title:Reference}
+
+If you use dynpss, please cite:
+
+{phang}Philips, Andrew Q. 2016a. "Dynpss: A program to dynamically simulate autoregressive distributed lag (ARDL) models."
+
+and:
+
+{phang}Philips, Andrew Q. 2016b. "Have your cake and eat it too: Cointegration and dynamic inferences from autoregressive distributive lag models." Working paper.{p_end}
+
+{marker citations}{...}
+{title:Citations}
+
+{phang}Narayan, Paresh Kumar. 2005. "The Saving and Investment Nexus for China: Evidence from Cointegration Tests." Applied Economics 37(17):1979-1990.
+
+{phang}Pesaran, M Hashem, Yongcheol Shin and Richard J Smith. 2001. "Bounds testing approaches to the analysis of level relationships." Journal of Applied Econometrics 16(3):289-326.{p_end}
+
+{marker examples}{...}
+{title:Examples}
+
+{phang}See {view "http://andyphilips.github.io/dynpss/"} for examples.{p_end}
