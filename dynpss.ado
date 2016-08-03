@@ -21,7 +21,7 @@ capture program define dynpss , rclass
 syntax [varlist] [if] [in], [lags(string) diffs(string) lagdiffs(string) ///
 level(string) forceset(string)  Time(numlist integer > 1) shockval(numlist)  ///
 shockvar(varname) range(numlist integer > 1) saving(string) 			 ///
-sig(numlist integer < 100) ec levels(string) 			 ///
+sig(numlist integer < 100) ec  			 ///
 burnin(numlist integer > 1) sims(numlist) graph rarea expectedval]
 
 version 8

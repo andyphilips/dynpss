@@ -97,8 +97,8 @@ is a list of the number of contemporaneous first differences to include for each
 is a numeric list of the lagged first difference to include for each variable. For instance, to include a lag at t-2 for {depvar}, a lag at t-1 for the first weakly exogenous variable, and none for the second, specify {cmd:lagdiff(2 1 .)}. CURRENT VERSION DOES NOT ALLOW FOR CONSECUTIVE LAGGED DIFFERENCES.
 
 {phang}
-{opth levels(varlist)}
-is a list of variables (x1 x2...) to appear in levels. If both {opt levels( )} and {opt ec} are specified, {cmd:dynpss} will issue a warning message.{p_end}
+{opth level(varlist)}
+is a list of variables (x1 x2...) to appear in levels. If both {opt level( )} and {opt ec} are specified, {cmd:dynpss} will issue a warning message.{p_end}
 
 {phang}
 {opt ec}
