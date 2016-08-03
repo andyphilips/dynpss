@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.0.1  07jul2016}{...}
+{* *! version 1.0.2  08aug2016}{...}
 {findalias asfradohelp}{...}
 {vieweralsosee "" "--"}{...}
 {vieweralsosee "[R] help" "help help"}{...}
@@ -23,7 +23,6 @@
 {cmdab:dynpss} 
 {depvar}
 {indepvars}
-{ifin}
 [{cmd:,} {it:options}]
 
 {synoptset 20 tabbed}{...}
@@ -49,6 +48,7 @@
 {synopt:{opth sims(numlist)}}number of simulations (default is 1000){p_end}
 {synopt:{opth burnin(#)}}allows program to iterate out so starting values are stable (rarely used){p_end}
 {synopt:{opt graph}}plot dynamic results using a spikeplot. Can also specify {opt rarea} to create an area plot{p_end}
+{synopt:{opt expectedval}}calculate expected values instead of predicted values (the default){p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}
@@ -67,7 +67,7 @@ Users can find and download the most up-to-date version of {cmd:dynpss} at:
 In short, this modeling strategy involves: 1.) determining the order of integration of the dependent variable (which determines whether the resulting ARDL model is run in error-correction form or lagged-dependent form), 2.) ensuring no variable is higher than I(1) or contains a seasonal unit root 3.) using information criterion to identify the best-fitting {cmd:lagdiff( )} structure, which is used to purge the model of residual autocorrelation and ensure it is dynamically stable, 4.) for error-correction models, performing the bounds test of Pesaran, Shin, and Smith (2001) and evaluating whether all regressors are all stationary, mixed I(0), I(1)/I(1) and cointegrating, or all cointegrating. Narayan (2005) provides finite sample critical values for this test. 5.) making changes as needed based off the bounds test, and re-running step 4.
 
 {pstd}
-{cmd:dynpss} is designed to dynamically simulate the effects of a counterfactual change in one weakly exogenous regressor at a point in time, using stochastic simulation techniques. Since the ARDL procedure can produce models that are complicated to interpret, {cmd:dynpss} is designed to ease the burden of substantive interpretations through the creation of expected values of the dependent variable (along with associated confidence intervals), which can be plotted to show how a change in one variable "flows" through the model over time. {cmd:dynpss} takes 1000 (or however many simulations a user desires) draws of the set of parameters from a multivariate normal distribution, using the estimated parameters and the variance-covariance matrix from the linear regression. These are then used to create predicted Y-hat values over time by setting all covariates to certain values (typically means) and introducing stochastic uncertainty. 
+{cmd:dynpss} is designed to dynamically simulate the effects of a counterfactual change in one weakly exogenous regressor at a point in time, using stochastic simulation techniques. Since the ARDL procedure can produce models that are complicated to interpret, {cmd:dynpss} is designed to ease the burden of substantive interpretations through the creation of predicted (or expected) values of the dependent variable (along with associated confidence intervals), which can be plotted to show how a change in one variable "flows" through the model over time. {cmd:dynpss} takes 1000 (or however many simulations a user desires) draws of the set of parameters from a multivariate normal distribution, using the estimated parameters and the variance-covariance matrix from the linear regression. These are then used to create predicted Y-hat values over time by setting all covariates to certain values (typically means) and introducing stochastic uncertainty.
 
 {marker options}{...}
 {title:Options}
@@ -134,7 +134,11 @@ if using the option {cmd:forceset( )}, the predicted values will not be in equil
 
 {phang}
 {opt graph}
-although {cmd:dynspp} saves the means of the predicted values and user-specified confidence intervals in {cmd:saving}, users can also automatically plot the dynamic results with a spikeplot by using {cmd: graph}. As an alternative, by adding the option {cmd:rarea}, the program will automatically create an area plot.
+although {cmd:dynpss} saves the means of the predicted values and user-specified confidence intervals in {cmd:saving}, users can also automatically plot the dynamic results with a spikeplot by using {cmd: graph}. As an alternative, by adding the option {cmd:rarea}, the program will automatically create an area plot.
+
+{phang}
+{opt expectedval}
+by default, {cmd:dynpss} will calculate predicted values of the dependent variable for a given number of simulations. For each simulation, this contains a systematic component as well as a single draw of the stochastic component. With the {cmd:expectedval} option, the program instead calculates expected values of the dependent variable...i.e. the average of 1000 stochastic draws for each simulation. Predicted values are more conservative than expected values. Note that {cmd:dynpss} takes longer to run when {cmd:expectedval} is specified. 
 
 {marker author}{...}
 {title:Author}

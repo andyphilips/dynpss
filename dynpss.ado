@@ -1,8 +1,8 @@
 *
 *		PROGRAM DYNPSS
 *		
-*		version 1.1
-*		7/07/16
+*		version 1.0.2
+*		8/03/16
 *		Andrew Q. Philips
 *		Texas A&M University
 *		aphilips@pols.tamu.edu
@@ -10,7 +10,6 @@
 *
 *	ToDo: - Replace all scalars with tempname and then scalar so Stata doens't
 *			think I'm talking about a variable
-*		  - tempname all variables when possible
 *		  - What if I only want lag at t - 2 and want to exclude t - 1? Though
 *			you could basically trick the program by adding a new variable. 
 * -------------------------------------------------------------------------
@@ -23,7 +22,7 @@ syntax [varlist] [if] [in], [lags(string) diffs(string) lagdiffs(string) ///
 level(string) forceset(string)  Time(numlist integer > 1) shockval(numlist)  ///
 shockvar(varname) range(numlist integer > 1) saving(string) 			 ///
 sig(numlist integer < 100) ec levels(string) 			 ///
-burnin(numlist integer > 1) sims(numlist) graph rarea]
+burnin(numlist integer > 1) sims(numlist) graph rarea expectedval]
 
 version 8
 preserve							// we're going to remove existing data
@@ -95,7 +94,6 @@ if "`ec'" != ""	{							// ECM or ARDL
 else	{
 	di in y "Dependent variable to be run in levels"
 }
-
 
 * ----------------- Generate L and D as needed ----------------------------- *
 
@@ -180,11 +178,8 @@ qui forv i = 1/`n_vars'	{			// for every var
 	
 	/* Note: since lagged diffs are uncommon, I'm only adding it at the lag 
 	specified; i.e. if you say lagdiffs(. 3) it only includes l3d.X. One can
-	trick the program into including multiple ones anyway. If we were really 
-	advanced we could do 1/3 and parse by "/"...not sure how to do this though
-	I'll see what Soren thinks.
-	
-	*/
+	trick the program into including multiple ones anyway. To do: specify e.g:
+	1/3 and parse by "/" */
 	
 	if "`lagdiffs'" != ""	{					
 		loc lagdiffnum : word `i' of `lagdiffs'	// count of lag-diffs
@@ -260,7 +255,7 @@ else	{
 mat B = e(b)								// grab betas
 mat V = e(V)								// grab VCV matrix
 
-scalar sigma = e(rmse)^2					// grab sigma
+scalar sigma2 = e(rmse)^2					// grab sigma squared
 scalar dfsig = e(df_r)						// grab residual d.f.
 scalar length = e(rank)						// rank of matrix (needed for creating length of set matrix)
 
@@ -291,10 +286,9 @@ else	{		// if not, will just use means
 qui drawnorm `ldvs' `lddvs' `dsiv' `lsiv' `ldsiv' `siv' `ivset' `divset' `livset' `ldivset' const , n(`simulations') cov(V) means(B) clear
 * place vars in posterior beta's (PB) matrix:
 mkmat `ldvs' `lddvs' `dsiv' `lsiv' `ldsiv' `siv' `ivset' `divset' `livset' `ldivset' const, matrix(PB)
-* draw sigma from inv chi-2 to limit it on 0-1 range:
-tempvar Sigma
-qui gen `Sigma' = sqrt(sigma*(dfsig)/invchi2(dfsig,uniform()))
-
+* draw sigma-squared from inv chi-2 to limit it on 0-1 range:
+tempvar Sigma2
+qui gen `Sigma2' = sigma2*(dfsig)/invchi2(dfsig,uniform()) 
 
 * ----------------- Values at t = 1 ------------------------------- *
 mat set = J(length,1,.)			// container (incl. constant) to hold set values  
@@ -357,7 +351,7 @@ foreach var in `ldivset' {
 	loc i = `i' + 1 
 }
 
-* don't forget the constant!
+* don't forget the constant
 mat set[`i',1] = 1
 
 * Create predicted values ----------------- 
@@ -365,21 +359,30 @@ mat set[`i',1] = 1
 tempname PV
 mat `PV' = PB*set	
 svmat `PV'
-* add error into XB:
-replace `PV' = `PV' +  `Sigma'*rnormal()
+* add error into XB: expected values or predicted values:
+qui if "`expectedval'" != ""	{
+	tempvar tid
+	gen `tid' = _n
+	expand 1000
+	replace `PV' = `PV' + rnormal(0,sqrt(`Sigma2'))
+	collapse (mean) `PV' `Sigma2', by(`tid')
+}
+else	{
+	replace `PV' = `PV' + rnormal(0,sqrt(`Sigma2')) 
+}
 
 * predicted values are obtained: 
 if "`graph'" == ""		{
-	_pctile `PV', p(`sigl', `sigu')				// grab ll and ul and 50%'th p'centle
+	_pctile `PV', p(`sigl', `sigu')	// grab ll and ul
 	scalar ll_1 = r(r1)						// grab values
 	scalar ul_1 = r(r2)
 }
 else	{									// need all these for graph
-	_pctile `PV', p(2.5, 5, 25, 75, 95, 97.5) 
+	_pctile `PV', p(2.5, 5, 12.5, 87.5, 95, 97.5) 
 	scalar ll95_1 = r(r1)
 	scalar ll90_1 = r(r2)
-	scalar ll50_1 = r(r3)
-	scalar ul50_1 = r(r4)
+	scalar ll75_1 = r(r3)
+	scalar ul75_1 = r(r4)
 	scalar ul90_1 = r(r5)
 	scalar ul95_1 = r(r6)
 }
@@ -387,7 +390,6 @@ else	{									// need all these for graph
 su `PV', meanonly
 * if ECM, predicted change is added onto sample mean (which was saved in set matrix):
 if "`ec'" != ""	{
-	*noi di r(mean)
 	scalar meanpv_1 = r(mean) + set[1,1]
 }
 * if LDV, this is just the new predicted change
@@ -430,6 +432,7 @@ qui forv p = 2/`brange'	{
 	
 	* if t = shocktime	-----------------------------
 	if `p' == `btime'	{
+		
 		* shock differenced var:
 		foreach var in `dsiv'	{
 			mat set[`row',1] = `shockval'
@@ -438,6 +441,7 @@ qui forv p = 2/`brange'	{
 		foreach var in `lsiv' `ldsiv' {	// get past these...nothing happens
 			local row = `row' + 1
 		}
+		
 		* shock vars in levels:
 		foreach var in `siv'	{
 			gettoken dynamics name: var, parse("_")
@@ -490,13 +494,22 @@ qui forv p = 2/`brange'	{
 	mat `PV' = PB*set
 	capture drop `PV'	
 	svmat `PV'
-	* add error into XB:
-	replace `PV' = `PV' +  `Sigma'*rnormal()
+	* add error into XB: expected values or predicted values:
+	qui if "`expectedval'" != ""	{
+		tempvar tid
+		gen `tid' = _n
+		expand 1000
+		replace `PV' = `PV' + rnormal(0,sqrt(`Sigma2'))
+		collapse (mean) `PV' `Sigma2', by(`tid')
+	}
+	else	{
+		replace `PV' = `PV' + rnormal(0,sqrt(`Sigma2')) 
+	}
 	
-	* predicted values are obtained: 
+	* values are obtained: 
 	if "`graph'" == ""		{
-		_pctile `PV', p(`sigl', `sigu')				// grab ll and ul and 50%'th p'centle
-		if "`ec'" != ""	{						// if ECM, add pc'tiles to old predicted values.
+		_pctile `PV', p(`sigl', `sigu')				// grab ll and ul 
+		if "`ec'" != ""	{	// if ECM, add pc'tiles to old predicted values.
 			scalar ll_`p' = r(r1) + set[1,1]
 			scalar ul_`p' = r(r2) + set[1,1]
 		}
@@ -506,29 +519,30 @@ qui forv p = 2/`brange'	{
 		}
 	}
 	else	{									// need all these for graph
-		_pctile `PV', p(2.5, 5, 25, 75, 95, 97.5) 
+		_pctile `PV', p(2.5, 5, 12.5, 87.5, 95, 97.5) 
 		if "`ec'" != ""	{ 	// if ECM, add pc'tiles to old predicted values.
 			scalar ll95_`p' = r(r1) + set[1,1]
 			scalar ll90_`p' = r(r2) + set[1,1]
-			scalar ll50_`p' = r(r3) + set[1,1]
-			scalar ul50_`p' = r(r4) + set[1,1]
+			scalar ll75_`p' = r(r3) + set[1,1]
+			scalar ul75_`p' = r(r4) + set[1,1]
 			scalar ul90_`p' = r(r5) + set[1,1]
 			scalar ul95_`p' = r(r6) + set[1,1]
 		}
 		else	{
 			scalar ll95_`p' = r(r1)
 			scalar ll90_`p' = r(r2)
-			scalar ll50_`p' = r(r3)
-			scalar ul50_`p' = r(r4)
+			scalar ll75_`p' = r(r3)
+			scalar ul75_`p' = r(r4)
 			scalar ul90_`p' = r(r5)
 			scalar ul95_`p' = r(r6)
 		}
 	}
+	
 	* need means of predicted values:
 	su `PV', meanonly
-	* if ECM, predicted change is added onto sample mean (which was saved in set matrix):
+	* if ECM, predicted change is added onto sample mean 
+	* (which was saved in set matrix):
 	if "`ec'" != ""	{
-		*noi di r(mean)
 		scalar meanpv_`p' = r(mean) + set[1,1]
 	}
 	* if LDV, this is just the new predicted change
@@ -539,9 +553,9 @@ qui forv p = 2/`brange'	{
 
 
 * ----------------- Store Values for Saving or Graphing ----------------- *
-loc z = `range' + 1 // need 1 more row than range.
+loc z = `range' + 1 		// need 1 more row than range.
 if "`graph'" == ""	{
-	mat sims = J(`z',3,.) // empty container of "."'s to hold sims
+	mat sims = J(`z',3,.) 	// empty container of "."'s to hold sims
 	loc p = 1
 	forv i = `burnin'/`brange'	{
 		mat sims[`p',1] = meanpv_`i'
@@ -558,13 +572,13 @@ else	{
 		mat sims[`p',1] = meanpv_`i'
 		mat sims[`p',2] = ll95_`i'
 		mat sims[`p',3] = ll90_`i'
-		mat sims[`p',4] = ll50_`i'
-		mat sims[`p',5] = ul50_`i'
+		mat sims[`p',4] = ll75_`i'
+		mat sims[`p',5] = ul75_`i'
 		mat sims[`p',6] = ul90_`i'
 		mat sims[`p',7] = ul95_`i'
 		loc p = `p' + 1
 	}
-	mat colnames sims = mean ll_95 ll_90 ll_50 ul_50 ul_90 ul_95
+	mat colnames sims = mean ll_95 ll_90 ll_75 ul_75 ul_90 ul_95
 }
 
 svmat sims, names(col)
@@ -581,11 +595,26 @@ else	{
 }
 
 if "`graph'" != ""	{
-	if "`rarea'" != ""	{
-		twoway rarea ll_95 ul_95 time, color(eltblue) || rarea ll_90 ul_90 time, color(ebblue) || rarea ll_50 ul_50 time, color(navy) || line mean time, lcolor(black) lwidth(thick) legend(off) ytitle("Predicted Value") xtitle("Time")
+	if "`expectedval'" != ""	{
+		loc titletype = "Expected Value"
 	}
 	else	{
-		twoway rspike ll_95 ul_95 time, lcolor(eltblue) lwidth(thin) || rspike ll_90 ul_90 time, lcolor(ebblue) lwidth(medthick) || rspike ll_50 ul_50 time, lcolor(navy) lwidth(thick) ||  scatter mean time, mcolor(dknavy) msymbol(o) msize(large) legend(off) ytitle("Predicted Value") xtitle("Time")
+		loc titletype = "Predicted Value"
+	}
+	
+	if "`rarea'" != ""	{
+		twoway rarea ll_95 ul_95 time, color(eltblue) ||		///
+		rarea ll_90 ul_90 time, color(ebblue) || 				///
+		rarea ll_75 ul_75 time, color(navy) || line mean time,	///
+		lcolor(black) lwidth(thick) legend(off)					///
+		ytitle("`titletype'") xtitle("Time")
+	}
+	else	{
+		twoway rspike ll_95 ul_95 time, lcolor(eltblue) lwidth(thin) ///
+		|| rspike ll_90 ul_90 time, lcolor(ebblue) lwidth(medthick)  ///
+		|| rspike ll_75 ul_75 time, lcolor(navy) lwidth(thick) 		 ///
+		||  scatter mean time, mcolor(dknavy) msymbol(o)			 ///
+		msize(large) legend(off) ytitle("`titletype'") xtitle("Time")
 	}
 }
 
