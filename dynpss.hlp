@@ -76,7 +76,7 @@ In short, this modeling strategy involves: 1.) determining the order of integrat
 
 {phang}
 {opth lags(numlist)}
-is a numeric list of the number of lags to include for each variable. The number of desired lags is listed in the order in which the variables in {depvar} and {indepvar} appear. For instance, in a model with two weakly exogenous variables, we lag all variables by: {cmd:lags(1 1 1)}. Note that at least one lag for {depvar} must always be specified. To estimate a model without a lag for a particular variable, replace the number with a "."; for instance {cmd:lags(1 . .)}. If a higher number of lags are specified, {cmd:dynpss} will add consecutive lags; i.e. lags(3 . .) will introduce t-1, t-2, t-3 in the model.
+is a numeric list of the number of lags to include for each variable. The number of desired lags is listed in the order in which the variables in {depvar} and {indepvars} appear. For instance, in a model with two weakly exogenous variables, we lag all variables by: {cmd:lags(1 1 1)}. Note that at least one lag for {depvar} must always be specified. To estimate a model without a lag for a particular variable, replace the number with a "."; for instance {cmd:lags(1 . .)}. If a higher number of lags are specified, {cmd:dynpss} will add consecutive lags; i.e. lags(3 . .) will introduce t-1, t-2, t-3 in the model.
 
 {phang}
 {opth shockvar(varname)}
