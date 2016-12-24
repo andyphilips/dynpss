@@ -1,8 +1,8 @@
 ### dynpss
 Stata module to dynamically simulate autoregressive distributed lag (ARDL) models.
 
-### Download
-The most recent version of `dynpss` is available on this page. This program is part of a suite that also includes `pssbounds` (Philips 2016c), a Stata module to display the necessary critical values to conduct the Pesaran, Shin and Smith (2001) bounds test for cointegration. 
+### Download 
+You can download the most recent version of `dynpss` on the project site [here](https://github.com/andyphilips/dynpss/archive/master.zip). This program is part of a suite that also includes `pssbounds` (Philips 2016c), a Stata module to display the necessary critical values to conduct the Pesaran, Shin and Smith (2001) bounds test for cointegration. 
 
 `dynpss` IS STILL UNDER DEVELOPMENT. Feel free to use the program, but you are encouraged to contact the author with any issues or bugs you find. A module of `dynpss` for R is also under development.
 
