@@ -2,7 +2,7 @@
 Stata module to dynamically simulate autoregressive distributed lag (ARDL) models.
 
 ### Download 
-You can download the most recent version of `dynpss` on the project site [here](https://github.com/andyphilips/dynpss/archive/master.zip). This program is part of a suite that also includes `pssbounds` (Philips 2016c), a Stata module to display the necessary critical values to conduct the Pesaran, Shin and Smith (2001) bounds test for cointegration. 
+You can download the most recent version of `dynpss` from the project site [here](https://github.com/andyphilips/dynpss/archive/master.zip). This program is part of a suite that also includes `pssbounds` (Philips 2016c), a Stata module to display the necessary critical values to conduct the Pesaran, Shin and Smith (2001) bounds test for cointegration. 
 
 `dynpss` IS STILL UNDER DEVELOPMENT. Feel free to use the program, but you are encouraged to contact the author with any issues or bugs you find. A module of `dynpss` for R is also under development.
 
@@ -75,15 +75,19 @@ Tomz, Michael, Jason Wittenberg and Gary King. 2003. "CLARIFY: Software for inte
 
 ### Examples<a id="examples"></a>
 Open up the Ura dataset ("supreme court mood replication.dta") from his article, "Backlash and Legitimation: Macro Political Responses to Supreme Court Decisions", available [HERE](http://doi:10.7910/DVN/24765)
-```
+
+```do
 use supreme court mood replication.dta, clear
 ```
+
 Since the program uses Stata's matrix capabilities, it helps to increase the total matrix size:
-```
+
+```do
 set matsize 5000
 ```
 Run the error-correction model that Ura does, and examine what a 1 standard deviation increase to inflation would to to public mood (the dependent variable). Since we want lags for all variables (including the dependent variable), we specify `lags(1 1 1 1 1)`. Since all of the regressors are also to appear in first differences, we add `diffs(. 1 1 1 1)`. We will specify a range of 30 using the `range` option and we want the shock to occur at time t=10 by using the `time` option. To shock inflation at this time, we add `shockvar(inflation)`, and the magnitude of the shock is given by `shockval(2.9)`. We can automatically see a spikeplot of the dynamic simulation results by using the `graph` option. Last, by adding the `ec` option, the program will turn the dependent variable into first-differences:
-```
+
+```do
 dynpss mood policy unemployment inflation caselaw, ///
 lags(1 1 1 1 1) diffs(. 1 1 1 1)                   ///
 shockval(2.9) shockvar(inflation) 	           ///
@@ -92,31 +96,38 @@ time(10) range(30) graph ec
 And the spikeplot that is automatically created:
 ![graph1](https://raw.githubusercontent.com/andyphilips/miscellaneous/master/img/dynpss_g1.png "+1 Standard Deviation Increase in Inflation")
 The spikeplot shows point estimates of the mean of the predicted value, and 75, 90, and 95 percent confidence intervals shown in dark to light blue gradients, respectively. Note that the confidence intervals surrounding the predicted values are somewhat bumpy across time. By increasing the number of simulations with `sim( )`, we can add more simulations and smooth things out. Let's also see what an area plot looks like by adding the `rarea` option:
-```
+
+```do
 dynpss mood policy unemployment inflation caselaw, ///
 lags(1 1 1 1 1) diffs(. 1 1 1 1)                   ///
 shockval(2.9) shockvar(inflation) 	           ///
 time(10) range(30) graph ec sims(5000) rarea
 ```
+
 ![graph3](https://raw.githubusercontent.com/andyphilips/miscellaneous/master/img/dynpss_g2.png "+1 Standard Deviation Increase in Inflation, Area Plot")
+
 We can add lagged first differences by using the `lagdiffs( )` option. Let's add a first difference at the second lag for inflation, and a first difference at the first lag for caselaw:
-```
+
+```do
 dynpss mood policy unemployment inflation caselaw, ///
 lags(1 1 1 1 1) diffs(. 1 1 1 1)                   ///
 shockval(2.9) shockvar(inflation) 	           ///
 time(10) range(30) graph ec sims(5000)             ///
 lagdiffs(. . . 2 1)
 ```
+
 ![graph3](https://raw.githubusercontent.com/andyphilips/miscellaneous/master/img/dynpss_g3.png "+1 Standard Deviation Increase in Inflation, with Lagged First Differences")
 
 While the plots above depict predicted values, we can use the `expectedval` option to instead calculate expected values. Since this takes much longer to simulate, we will lower the number of simulations to 500:
-```
+
+```do
 dynpss mood policy unemployment inflation caselaw, ///
 lags(1 1 1 1 1) diffs(. 1 1 1 1)                   ///
 shockval(2.9) shockvar(inflation) 	           ///
 time(10) range(30) graph ec sims(500)             ///
 lagdiffs(. . . 2 1) expectedval
 ```
+
 ![graph4](https://raw.githubusercontent.com/andyphilips/miscellaneous/master/img/dynpss_g4.png "+1 Standard Deviation Increase in Inflation, Expected Values")
 
 ### Example Papers<a id="example-papers"></a>
