@@ -1,6 +1,5 @@
 # dynpss
 Stata module to dynamically simulate autoregressive distributed lag models.
 
-Link to permanent site is [HERE](http://andyphilips.github.io/dynpss/).
-
-**Note that `dynpss` is no longer supported. There is a newer program, `dynardl`, that  superceeds `dynpss`, and is available [HERE](http://andyphilips.github.io/dynardl/).**
+## Details
+:warning: `dynpss` is an outdated package that is no longer updated. A new and improved version can be found at http://andyphilips.github.io/dynamac/.
